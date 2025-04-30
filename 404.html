@@ -7,56 +7,76 @@
     // Configuración específica para KASH Wallet
     const appConfig = {
       android: {
-        appScheme: 'kashwallet://',  // Scheme para Android
+        appScheme: 'kashwallet://inicio',  // Scheme para Android (agregué ruta específica)
+        intentUrl: 'intent://inicio#Intent;scheme=kashwallet;package=onsigna.wallet.kashpay;end;', // Intent explícito para Android
         storeUrl: 'https://play.google.com/store/apps/details?id=onsigna.wallet.kashpay&hl=es_419'
       },
       ios: {
-        appScheme: 'kashwallet://',  // Scheme para iOS
+        appScheme: 'kashwallet://inicio',  // Scheme para iOS
+        universalLink: 'https://kashpay.com/inicio', // Universal Link (debes configurarlo en tu app iOS)
         storeUrl: 'https://apps.apple.com/mx/app/kash-wallet/id6443642308'
       },
-      fallbackUrl: 'https://kashpay.com'  // Cambia esto por tu sitio web si es diferente
+      fallbackUrl: 'https://kashpay.com',
+      timeout: 2000 // Tiempo de espera aumentado a 2 segundos
     };
 
     // Detectar el sistema operativo del usuario
     function detectPlatform() {
       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      
       if (/android/i.test(userAgent)) return 'android';
       if (/iPad|iPhone|iPod/i.test(userAgent) && !window.MSStream) return 'ios';
       return 'other';
     }
 
-    // Intenta abrir la aplicación
-    function launchApp(scheme, fallback) {
-      // Primero intentamos abrir la app directamente
-      window.location.href = scheme;
-      
-      // Si después de 500ms no se abrió, redirigimos a la tienda
-      setTimeout(function() {
-        if (!document.hidden) {
-          window.location.href = fallback;
-        }
-      }, 500);
-    }
-
-    // Manejar la redirección inteligente
-    function smartRedirect() {
+    // Intenta abrir la aplicación con método mejorado
+    function launchApp() {
       const platform = detectPlatform();
+      let appOpened = false;
       
-      switch(platform) {
-        case 'android':
-          launchApp(appConfig.android.appScheme, appConfig.android.storeUrl);
-          break;
-        case 'ios':
-          launchApp(appConfig.ios.appScheme, appConfig.ios.storeUrl);
-          break;
-        default:
-          window.location.href = appConfig.fallbackUrl;
+      // Evento para detectar si la app se abrió
+      window.addEventListener('blur', function() {
+        appOpened = true;
+      });
+
+      if (platform === 'android') {
+        // Método mejorado para Android
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = appConfig.android.intentUrl;
+        document.body.appendChild(iframe);
+        
+        setTimeout(function() {
+          if (!appOpened) {
+            window.location.href = appConfig.android.storeUrl;
+          }
+        }, appConfig.timeout);
+        
+      } else if (platform === 'ios') {
+        // Método mejorado para iOS
+        window.location.href = appConfig.ios.universalLink;
+        
+        setTimeout(function() {
+          if (!appOpened) {
+            window.location.href = appConfig.ios.storeUrl;
+          }
+        }, appConfig.timeout);
+        
+        // Fallback para iOS < 9
+        setTimeout(function() {
+          if (!appOpened) {
+            window.location.href = appConfig.ios.appScheme;
+          }
+        }, 500);
+        
+      } else {
+        window.location.href = appConfig.fallbackUrl;
       }
     }
 
     // Iniciar la redirección cuando la página cargue
-    window.onload = smartRedirect;
+    window.onload = function() {
+      setTimeout(launchApp, 100); // Pequeño retraso para mejor detección
+    };
   </script>
   <style>
     body {
@@ -85,6 +105,6 @@
   <div class="loading"></div>
   <h1>KASH Wallet</h1>
   <p>Redirigiendo a la aplicación...</p>
-  <p>Si no se redirige automáticamente, <a href="#" onclick="smartRedirect()">haz clic aquí</a>.</p>
+  <p>Si no se redirige automáticamente, <a href="#" onclick="launchApp()">haz clic aquí</a>.</p>
 </body>
 </html>
