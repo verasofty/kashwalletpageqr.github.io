@@ -3,24 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <title>KASH Wallet - Redirección</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script>
-    // Configuración específica para KASH Wallet
+    // Configuración completa para KASH Wallet
     const appConfig = {
       android: {
-        appScheme: 'kashwallet://inicio',  // Scheme para Android (agregué ruta específica)
-        intentUrl: 'intent://inicio#Intent;scheme=kashwallet;package=onsigna.wallet.kashpay;end;', // Intent explícito para Android
+        appScheme: 'kashwallet://inicio',
+        intentUrl: 'intent://inicio#Intent;scheme=kashwallet;package=onsigna.wallet.kashpay;end;',
         storeUrl: 'https://play.google.com/store/apps/details?id=onsigna.wallet.kashpay&hl=es_419'
       },
       ios: {
-        appScheme: 'kashwallet://inicio',  // Scheme para iOS
-        universalLink: 'https://kashpay.com/inicio', // Universal Link (debes configurarlo en tu app iOS)
-        storeUrl: 'https://apps.apple.com/mx/app/kash-wallet/id6443642308'
+        appScheme: 'kashwallet://inicio',
+        universalLink: 'https://kashpay.com/inicio',
+        itunesUrl: 'itms-apps://itunes.apple.com/app/id6443642308',
+        webStoreUrl: 'https://apps.apple.com/mx/app/kash-wallet/id6443642308'
       },
       fallbackUrl: 'https://onsigna.com',
-      timeout: 2000 // Tiempo de espera aumentado a 2 segundos
+      timeout: 1000
     };
 
-    // Detectar el sistema operativo del usuario
+    // Detectar plataforma
     function detectPlatform() {
       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
       if (/android/i.test(userAgent)) return 'android';
@@ -28,54 +30,57 @@
       return 'other';
     }
 
-    // Intenta abrir la aplicación con método mejorado
-    function launchApp() {
-      const platform = detectPlatform();
-      let appOpened = false;
+    // Redirección para Android
+    function launchAndroid() {
+      // Método 1: Intent explícito
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = appConfig.android.intentUrl;
+      document.body.appendChild(iframe);
       
-      // Evento para detectar si la app se abrió
-      window.addEventListener('blur', function() {
-        appOpened = true;
-      });
+      // Método 2: Fallback a Play Store
+      setTimeout(() => {
+        window.location.href = appConfig.android.storeUrl;
+      }, appConfig.timeout);
+    }
 
+    // Redirección para iOS (mejorada)
+    function launchIOS() {
+      // 1. Intenta Universal Link (si está configurado)
+      window.location.href = appConfig.ios.universalLink;
+      
+      // 2. Fallback a custom scheme
+      setTimeout(() => {
+        window.location = appConfig.ios.appScheme;
+        
+        // 3. Último fallback: App Store directa
+        setTimeout(() => {
+          window.location.href = appConfig.ios.itunesUrl;
+        }, appConfig.timeout);
+      }, 300);
+    }
+
+    // Manejar clic del usuario (requerido para iOS)
+    function handleUserInteraction() {
+      sessionStorage.setItem('userInteracted', 'true');
+      const platform = detectPlatform();
+      
       if (platform === 'android') {
-        // Método mejorado para Android
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = appConfig.android.intentUrl;
-        document.body.appendChild(iframe);
-        
-        setTimeout(function() {
-          if (!appOpened) {
-            window.location.href = appConfig.android.storeUrl;
-          }
-        }, appConfig.timeout);
-        
+        launchAndroid();
       } else if (platform === 'ios') {
-        // Método mejorado para iOS
-        window.location.href = appConfig.ios.universalLink;
-        
-        setTimeout(function() {
-          if (!appOpened) {
-            window.location.href = appConfig.ios.storeUrl;
-          }
-        }, appConfig.timeout);
-        
-        // Fallback para iOS < 9
-        setTimeout(function() {
-          if (!appOpened) {
-            window.location.href = appConfig.ios.appScheme;
-          }
-        }, 500);
-        
+        launchIOS();
       } else {
         window.location.href = appConfig.fallbackUrl;
       }
     }
 
-    // Iniciar la redirección cuando la página cargue
+    // Iniciar automáticamente solo si hubo interacción previa
     window.onload = function() {
-      setTimeout(launchApp, 100); // Pequeño retraso para mejor detección
+      if (sessionStorage.getItem('userInteracted')) {
+        const platform = detectPlatform();
+        if (platform === 'android') launchAndroid();
+        if (platform === 'ios') launchIOS();
+      }
     };
   </script>
   <style>
@@ -85,6 +90,28 @@
       padding: 50px;
       background-color: #f5f5f5;
       color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .logo {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 20px;
+      border-radius: 20px;
+    }
+    .btn-open {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 30px;
+      cursor: pointer;
+      margin: 20px 0;
+      transition: background-color 0.3s;
+    }
+    .btn-open:hover {
+      background-color: #45a049;
     }
     .loading {
       display: inline-block;
@@ -102,9 +129,21 @@
   </style>
 </head>
 <body>
-  <div class="loading"></div>
+  <div class="loading" id="loading"></div>
   <h1>KASH Wallet</h1>
-  <p>Redirigiendo a la aplicación...</p>
-  <p>Si no se redirige automáticamente, <a href="#" onclick="launchApp()">haz clic aquí</a>.</p>
+  <p>La billetera digital más segura</p>
+  
+  <button class="btn-open" onclick="handleUserInteraction()">
+    Abrir KASH Wallet
+  </button>
+  
+  <p>Si no tienes la app instalada, serás redirigido a la tienda</p>
+  
+  <script>
+    // Ocultar loading después de 3 segundos (solo para UX)
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+    }, 3000);
+  </script>
 </body>
 </html>
