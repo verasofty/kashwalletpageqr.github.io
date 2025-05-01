@@ -29,13 +29,34 @@
       return 'other';
     }
 
+    // Mostrar indicador para iOS
+    function showIOSHint() {
+      const hintElement = document.createElement('div');
+      hintElement.id = 'ios-hint';
+      hintElement.innerHTML = `
+        <div class="hint-container">
+          <div class="hint-arrow">↑</div>
+          <div class="hint-text">Si no se abre automáticamente, toca <strong>"Abrir"</strong> arriba</div>
+        </div>
+      `;
+      document.body.appendChild(hintElement);
+      
+      // Ocultar después de 8 segundos
+      setTimeout(() => {
+        hintElement.style.opacity = '0';
+        setTimeout(() => hintElement.remove(), 500);
+      }, 8000);
+    }
+
     // Redirección segura para iOS
     function launchIOS() {
       let timer = null;
       let appLaunched = false;
       
-      // Evento para detectar si la app se abrió
       window.addEventListener('blur', () => { appLaunched = true; });
+      
+      // Mostrar indicador visual después de 1 segundo
+      setTimeout(showIOSHint, 1000);
       
       // 1. Intento con Universal Link
       window.location.href = appConfig.ios.universalLink;
@@ -43,7 +64,6 @@
       // 2. Fallback con URL scheme
       timer = setTimeout(() => {
         if (!appLaunched) {
-          // Método seguro que no muestra errores en Safari
           const iframe = document.createElement('iframe');
           iframe.style.display = 'none';
           iframe.src = appConfig.ios.appScheme;
@@ -66,13 +86,11 @@
       
       window.addEventListener('blur', () => { appLaunched = true; });
       
-      // 1. Intento con Intent URL
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
       iframe.src = appConfig.android.intentUrl;
       document.body.appendChild(iframe);
       
-      // 2. Fallback a Play Store
       setTimeout(() => {
         if (!appLaunched && iframe.parentNode) {
           document.body.removeChild(iframe);
@@ -81,7 +99,6 @@
       }, appConfig.android.fallbackDelay);
     }
 
-    // Función principal de lanzamiento
     function launchApp() {
       const platform = detectPlatform();
       
@@ -94,7 +111,6 @@
       }
     }
 
-    // Inicio controlado
     document.addEventListener('DOMContentLoaded', () => {
       setTimeout(launchApp, 100);
     });
@@ -106,6 +122,7 @@
       padding: 50px;
       background-color: #f5f5f5;
       color: #333;
+      position: relative;
     }
     .loading {
       display: inline-block;
@@ -132,6 +149,46 @@
     }
     .btn:hover {
       background-color: #45a049;
+    }
+    /* Estilos para el indicador iOS */
+    #ios-hint {
+      position: fixed;
+      top: 70px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      z-index: 1000;
+      animation: fadeIn 0.5s ease-out;
+      transition: opacity 0.5s;
+    }
+    .hint-container {
+      display: inline-block;
+      background: rgba(255,255,255,0.9);
+      padding: 10px 20px;
+      border-radius: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border: 1px solid #e0e0e0;
+    }
+    .hint-arrow {
+      color: #4CAF50;
+      font-size: 24px;
+      font-weight: bold;
+      line-height: 1;
+      margin-bottom: 5px;
+      animation: bounce 2s infinite;
+    }
+    .hint-text {
+      font-size: 14px;
+      color: #333;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
     }
   </style>
 </head>
