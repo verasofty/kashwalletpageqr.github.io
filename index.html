@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>KASH Wallet - Redirección</title>
+  <meta name="apple-itunes-app" content="app-id=6443642308">
   <meta name="apple-itunes-app" content="app-id=6443642308, app-argument=kashwallet://inicio">
-  <script>
+  
+  <!-- Prevención de redirección no deseada en iOS -->
+  <script type="text/javascript">
     // Configuración específica para KASH Wallet
     const appConfig = {
       android: {
@@ -14,11 +17,11 @@
       },
       ios: {
         appScheme: 'kashwallet://inicio',
-        universalLink: 'https://onsigna.com.com',
+        universalLink: 'https://kashpay.com/inicio',
         storeUrl: 'https://apps.apple.com/mx/app/kash-wallet/id6443642308'
       },
-      fallbackUrl: 'https://onsigna.com',
-      timeout: 2000 // Tiempo de espera aumentado a 2 segundos
+      fallbackUrl: 'https://kashpay.com',
+      timeout: 2000
     };
 
     // Detectar el sistema operativo del usuario
@@ -40,7 +43,7 @@
       });
 
       if (platform === 'android') {
-        // Método mejorado para Android
+        // Método para Android
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = appConfig.android.intentUrl;
@@ -53,44 +56,48 @@
         }, appConfig.timeout);
         
       } else if (platform === 'ios') {
-        // Método mejorado para iOS
-        // 1. Intento con Universal Link
-        window.location.href = appConfig.ios.universalLink;
-        
-        // 2. Fallback con scheme después de 500ms
-        setTimeout(function() {
-          if (!appOpened) {
-            // Intento con window.open (mejor soporte en Safari)
-            const opened = window.open(appConfig.ios.appScheme, '_blank');
-            
-            // 3. Fallback con iframe si window.open falla
-            setTimeout(function() {
-              if (!appOpened && opened === null) {
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = appConfig.ios.appScheme;
-                document.body.appendChild(iframe);
-              }
-            }, 25);
-          }
-        }, 500);
-        
-        // 4. Redirigir a App Store si todo falla
-        setTimeout(function() {
-          if (!appOpened) {
-            window.location.href = appConfig.ios.storeUrl;
-          }
-        }, appConfig.timeout);
-        
+        // Nueva estrategia para iOS que evita redirecciones no deseadas
+        try {
+          // 1. Intento directo con URL scheme
+          window.location = appConfig.ios.appScheme;
+          
+          // 2. Si falla, intentar con Universal Link después de 250ms
+          setTimeout(function() {
+            if (!appOpened) {
+              window.location.href = appConfig.ios.universalLink;
+            }
+          }, 250);
+          
+          // 3. Finalmente redirigir a App Store si todo falla
+          setTimeout(function() {
+            if (!appOpened) {
+              // Método seguro que evita redirecciones no deseadas
+              const link = document.createElement('a');
+              link.href = appConfig.ios.storeUrl;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }
+          }, appConfig.timeout);
+          
+        } catch(e) {
+          console.error('Error en redirección:', e);
+          window.location.href = appConfig.ios.storeUrl;
+        }
       } else {
         window.location.href = appConfig.fallbackUrl;
       }
     }
 
-    // Iniciar la redirección cuando la página cargue
-    window.onload = function() {
-      setTimeout(launchApp, 100);
-    };
+    // Prevención de redirección no deseada
+    document.addEventListener('DOMContentLoaded', function() {
+      // Verificar si estamos en iOS y si hay parámetros de redirección no deseados
+      if (detectPlatform() === 'ios' && window.location.href.indexOf('gen.xyz') === -1) {
+        setTimeout(launchApp, 300);
+      }
+    });
   </script>
   <style>
     body {
@@ -133,6 +140,6 @@
   <h1>KASH Wallet</h1>
   <p>Redirigiendo a la aplicación...</p>
   <p>Si no se redirige automáticamente, <a href="#" onclick="launchApp(); return false;" class="btn">Abrir KASH Wallet</a></p>
-  <p><small>O instala la app desde <a href="https://apps.apple.com/mx/app/kash-wallet/id6443642308" target="_blank">App Store</a> o <a href="https://play.google.com/store/apps/details?id=onsigna.wallet.kashpay&hl=es_419" target="_blank">Google Play</a></small></p>
+  <p><small>O instala la app desde <a href="https://apps.apple.com/mx/app/kash-wallet/id6443642308" target="_blank" rel="noopener noreferrer">App Store</a> o <a href="https://play.google.com/store/apps/details?id=onsigna.wallet.kashpay&hl=es_419" target="_blank" rel="noopener noreferrer">Google Play</a></small></p>
 </body>
 </html>
