@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>KASH Wallet - Redirección</title>
+  <meta name="apple-itunes-app" content="app-id=6443642308">
   <script>
     // Configuración específica para KASH Wallet
     const appConfig = {
       android: {
-        appScheme: 'kashwallet://inicio',  // Scheme para Android (agregué ruta específica)
-        intentUrl: 'intent://inicio#Intent;scheme=kashwallet;package=onsigna.wallet.kashpay;end;', // Intent explícito para Android
+        appScheme: 'kashwallet://inicio',
+        intentUrl: 'intent://inicio#Intent;scheme=kashwallet;package=onsigna.wallet.kashpay;end;',
         storeUrl: 'https://play.google.com/store/apps/details?id=onsigna.wallet.kashpay&hl=es_419'
       },
       ios: {
-        appScheme: 'kashwallet://inicio',  // Scheme para iOS
-        universalLink: 'https://kashpay.com/inicio', // Universal Link (debes configurarlo en tu app iOS)
+        appScheme: 'kashwallet://inicio',
+        universalLink: 'https://kashpay.com/inicio',
         storeUrl: 'https://apps.apple.com/mx/app/kash-wallet/id6443642308'
       },
-      fallbackUrl: 'https://kashpay.com',
-      timeout: 500 // Tiempo de espera aumentado a 2 segundos
+      fallbackUrl: 'https://onsigna.com',
+      timeout: 2000 // Tiempo de espera aumentado a 2 segundos
     };
 
     // Detectar el sistema operativo del usuario
@@ -53,20 +54,33 @@
         
       } else if (platform === 'ios') {
         // Método mejorado para iOS
+        // 1. Intento con Universal Link
         window.location.href = appConfig.ios.universalLink;
         
+        // 2. Fallback con scheme después de 500ms
+        setTimeout(function() {
+          if (!appOpened) {
+            // Intento con window.open (mejor soporte en Safari)
+            const opened = window.open(appConfig.ios.appScheme, '_blank');
+            
+            // 3. Fallback con iframe si window.open falla
+            setTimeout(function() {
+              if (!appOpened && opened === null) {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = appConfig.ios.appScheme;
+                document.body.appendChild(iframe);
+              }
+            }, 25);
+          }
+        }, 500);
+        
+        // 4. Redirigir a App Store si todo falla
         setTimeout(function() {
           if (!appOpened) {
             window.location.href = appConfig.ios.storeUrl;
           }
         }, appConfig.timeout);
-        
-        // Fallback para iOS < 9
-        setTimeout(function() {
-          if (!appOpened) {
-            window.location.href = appConfig.ios.appScheme;
-          }
-        }, 500);
         
       } else {
         window.location.href = appConfig.fallbackUrl;
@@ -75,7 +89,7 @@
 
     // Iniciar la redirección cuando la página cargue
     window.onload = function() {
-      setTimeout(launchApp, 100); // Pequeño retraso para mejor detección
+      setTimeout(launchApp, 100);
     };
   </script>
   <style>
@@ -99,12 +113,26 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .btn:hover {
+      background-color: #45a049;
+    }
   </style>
 </head>
 <body>
   <div class="loading"></div>
   <h1>KASH Wallet</h1>
   <p>Redirigiendo a la aplicación...</p>
-  <p>Si no se redirige automáticamente, <a href="#" onclick="launchApp()">haz clic aquí</a>.</p>
+  <p>Si no se redirige automáticamente, <a href="#" onclick="launchApp(); return false;" class="btn">Abrir KASH Wallet</a></p>
+  <p><small>O instala la app desde <a href="https://apps.apple.com/mx/app/kash-wallet/id6443642308" target="_blank">App Store</a> o <a href="https://play.google.com/store/apps/details?id=onsigna.wallet.kashpay&hl=es_419" target="_blank">Google Play</a></small></p>
 </body>
 </html>
