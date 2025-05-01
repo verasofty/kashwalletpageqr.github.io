@@ -3,85 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <title>KASH Wallet - Redirección</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script>
-    // Configuración completa para KASH Wallet
+    // Configuración específica para KASH Wallet
     const appConfig = {
       android: {
-        appScheme: 'kashwallet://inicio',
-        intentUrl: 'intent://inicio#Intent;scheme=kashwallet;package=onsigna.wallet.kashpay;end;',
+        appScheme: 'kashwallet://',  // Scheme para Android
         storeUrl: 'https://play.google.com/store/apps/details?id=onsigna.wallet.kashpay&hl=es_419'
       },
       ios: {
-        appScheme: 'kashwallet://inicio',
-        universalLink: 'https://kashpay.com/inicio',
-        itunesUrl: 'itms-apps://itunes.apple.com/app/id6443642308',
-        webStoreUrl: 'https://apps.apple.com/mx/app/kash-wallet/id6443642308'
+        appScheme: 'kashwallet://',  // Scheme para iOS
+        storeUrl: 'https://apps.apple.com/mx/app/kash-wallet/id6443642308'
       },
-      fallbackUrl: 'https://onsigna.com',
-      timeout: 1000
+      fallbackUrl: 'https://kashpay.com'  // Cambia esto por tu sitio web si es diferente
     };
 
-    // Detectar plataforma
+    // Detectar el sistema operativo del usuario
     function detectPlatform() {
       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      
       if (/android/i.test(userAgent)) return 'android';
       if (/iPad|iPhone|iPod/i.test(userAgent) && !window.MSStream) return 'ios';
       return 'other';
     }
 
-    // Redirección para Android
-    function launchAndroid() {
-      // Método 1: Intent explícito
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = appConfig.android.intentUrl;
-      document.body.appendChild(iframe);
+    // Intenta abrir la aplicación
+    function launchApp(scheme, fallback) {
+      // Primero intentamos abrir la app directamente
+      window.location.href = scheme;
       
-      // Método 2: Fallback a Play Store
-      setTimeout(() => {
-        window.location.href = appConfig.android.storeUrl;
-      }, appConfig.timeout);
+      // Si después de 500ms no se abrió, redirigimos a la tienda
+      setTimeout(function() {
+        if (!document.hidden) {
+          window.location.href = fallback;
+        }
+      }, 500);
     }
 
-    // Redirección para iOS (mejorada)
-    function launchIOS() {
-      // 1. Intenta Universal Link (si está configurado)
-      window.location.href = appConfig.ios.universalLink;
-      
-      // 2. Fallback a custom scheme
-      setTimeout(() => {
-        window.location = appConfig.ios.appScheme;
-        
-        // 3. Último fallback: App Store directa
-        setTimeout(() => {
-          window.location.href = appConfig.ios.itunesUrl;
-        }, appConfig.timeout);
-      }, 300);
-    }
-
-    // Manejar clic del usuario (requerido para iOS)
-    function handleUserInteraction() {
-      sessionStorage.setItem('userInteracted', 'true');
+    // Manejar la redirección inteligente
+    function smartRedirect() {
       const platform = detectPlatform();
       
-      if (platform === 'android') {
-        launchAndroid();
-      } else if (platform === 'ios') {
-        launchIOS();
-      } else {
-        window.location.href = appConfig.fallbackUrl;
+      switch(platform) {
+        case 'android':
+          launchApp(appConfig.android.appScheme, appConfig.android.storeUrl);
+          break;
+        case 'ios':
+          launchApp(appConfig.ios.appScheme, appConfig.ios.storeUrl);
+          break;
+        default:
+          window.location.href = appConfig.fallbackUrl;
       }
     }
 
-    // Iniciar automáticamente solo si hubo interacción previa
-    window.onload = function() {
-      if (sessionStorage.getItem('userInteracted')) {
-        const platform = detectPlatform();
-        if (platform === 'android') launchAndroid();
-        if (platform === 'ios') launchIOS();
-      }
-    };
+    // Iniciar la redirección cuando la página cargue
+    window.onload = smartRedirect;
   </script>
   <style>
     body {
@@ -90,28 +65,6 @@
       padding: 50px;
       background-color: #f5f5f5;
       color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .logo {
-      width: 100px;
-      height: 100px;
-      margin-bottom: 20px;
-      border-radius: 20px;
-    }
-    .btn-open {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      font-size: 18px;
-      border-radius: 30px;
-      cursor: pointer;
-      margin: 20px 0;
-      transition: background-color 0.3s;
-    }
-    .btn-open:hover {
-      background-color: #45a049;
     }
     .loading {
       display: inline-block;
@@ -129,21 +82,9 @@
   </style>
 </head>
 <body>
-  <div class="loading" id="loading"></div>
+  <div class="loading"></div>
   <h1>KASH Wallet</h1>
-  <p>La billetera digital más segura</p>
-  
-  <button class="btn-open" onclick="handleUserInteraction()">
-    Abrir KASH Wallet
-  </button>
-  
-  <p>Si no tienes la app instalada, serás redirigido a la tienda</p>
-  
-  <script>
-    // Ocultar loading después de 3 segundos (solo para UX)
-    setTimeout(() => {
-      document.getElementById('loading').style.display = 'none';
-    }, 3000);
-  </script>
+  <p>Redirigiendo a la aplicación...</p>
+  <p>Si no se redirige automáticamente, <a href="#" onclick="smartRedirect()">haz clic aquí</a>.</p>
 </body>
 </html>
